@@ -20,11 +20,12 @@ Opening `index.html` directly via `file://` also works (no fetch/modules). After
 
 ## Architecture (all in `game.js`)
 
-- One file, top-to-bottom: input → utils → entity classes (`Bullet`, `Asteroid`, `Ship`, `Particle`) → game state → `update(dt)` → `draw()` → `requestAnimationFrame` loop.
-- Entity tables (`bullets`, `asteroids`, `particles`) are plain arrays filtered each frame by `dead` flag. New entities spawned mid-iteration are pushed to a separate array and concatenated after the loop (see bullet/asteroid collision in `update`).
+- One file, top-to-bottom: input → utils → entity classes (`Bullet`, `Asteroid`, `PowerUp`, `Ship`, `Particle`) → game state → `update(dt)` → `draw()` → `requestAnimationFrame` loop.
+- Entity tables (`bullets`, `asteroids`, `powerups`, `particles`) are plain arrays filtered each frame by `dead` flag. New entities spawned mid-iteration are pushed to a separate array and concatenated after the loop (see bullet/asteroid collision in `update`).
 - Toroidal space: positions wrapped with `wrap(v, max)`. All movement uses `dt` (seconds). `dt` is clamped to `0.05` in `loop` to avoid the spiral-of-death after tab switches.
 - State machine: `'playing' | 'dead' | 'gameover'`, transitions live in `update()`. `initGame()` is the only (re)entry point.
-- Tunables are inline consts per class (e.g. `ROT`, `THRUST`, `DRAG` in `Ship.update`; `RADII`/`SPEEDS`/`POINTS` arrays indexed by `size` 1–3). There is no config file.
+- Tunables are inline consts per class (e.g. `ROT`, `THRUST`, `DRAG` in `Ship.update`; `RADII`/`SPEEDS`/`POINTS` arrays indexed by `size` 1–3). There is no config file. Power-up "Velocidad" tunables live as module consts near the asteroid tables: `POWERUP_DROP_CHANCE`, `POWERUP_TTL`, `POWERUP_RADIUS`, `SPEED_BOOST_DURATION`, `SPEED_BOOST_MULT`.
+- Power-up "Velocidad": `PowerUp` orbs drop on asteroid destruction (`POWERUP_DROP_CHANCE`). On pickup, `ship.speedBoost` is set to `SPEED_BOOST_DURATION` and `Ship.update` multiplies `THRUST` by `SPEED_BOOST_MULT` while the timer is active. Pickup resets (not stacks) the timer; the effect clears on death (`killShip`) and respawn/level reset (`Ship.reset`).
 
 ## Input model (easy to get wrong)
 
@@ -38,4 +39,4 @@ Opening `index.html` directly via `file://` also works (no fetch/modules). After
 
 ## Known doc drift
 
-`README.md` advertises power-ups and a "estrella fugaz" (shooting star) asteroid type. These are **not** implemented in `game.js`. Treat the code as the source of truth, not the README, when resolving conflicts.
+`README.md` advertises a "estrella fugaz" (shooting star) asteroid type. This is **not** implemented in `game.js`. The power-up "Velocidad", on the other hand, is implemented. Treat the code as the source of truth, not the README, when resolving conflicts.
