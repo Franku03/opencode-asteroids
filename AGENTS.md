@@ -26,12 +26,13 @@ Opening `index.html` directly via `file://` also works (no fetch/modules). After
 - State machine: `'playing' | 'dead' | 'gameover'`, transitions live in `update()`. `initGame()` is the only (re)entry point.
 - Tunables are inline consts per class (e.g. `ROT`, `THRUST`, `DRAG` in `Ship.update`; `RADII`/`SPEEDS`/`POINTS` arrays indexed by `size` 1–3). There is no config file. Power-up "Velocidad" tunables live as module consts near the asteroid tables: `POWERUP_DROP_CHANCE`, `POWERUP_TTL`, `POWERUP_RADIUS`, `SPEED_BOOST_DURATION`, `SPEED_BOOST_MULT`. Estrella Fugaz tunables live alongside them: `SHOOTING_STAR_CHANCE`, `SHOOTING_STAR_SPEED`, `SHOOTING_STAR_TTL`, `SHOOTING_STAR_POINTS`, `SHOOTING_STAR_RADIUS`, `SHOOTING_STAR_TRAIL`.
 - Power-up "Velocidad": `PowerUp` orbs drop on asteroid destruction (`POWERUP_DROP_CHANCE`). On pickup, `ship.speedBoost` is set to `SPEED_BOOST_DURATION` and `Ship.update` multiplies `THRUST` by `SPEED_BOOST_MULT` while the timer is active. Pickup resets (not stacks) the timer; the effect clears on death (`killShip`) and respawn/level reset (`Ship.reset`).
+- Skins de la nave: la tabla `SKINS` (junto a los tunables de Estrella Fugaz) define por skin `name`, `color`, `flame` y `verts` (polígono apuntando a +x). El índice activo es el global `shipSkin`, cargado desde `localStorage` con `try/catch` y clampeado al rango válido; `setSkin(i)` normaliza módulo y persiste. Es cosmético: la hitbox (`ship.radius`) no cambia. `drawShipShape(verts, color, scale, lineWidth)` (en utils) traza el polígono; lo usan `Ship.draw` (escala 1) y `drawLifeIcon` (escala 0.45) para que los iconos de vida reflejen la skin activa. El ciclo con `C` se lee al inicio de `update()`, antes de los branch de estado, así que funciona en `playing`/`dead`/`gameover`.
 - Estrella Fugaz: `ShootingStar extends Asteroid` (size-1 base, overridden `radius`/`points`/`vx`/`vy`/`rotSpeed`). Spawns on asteroid destruction (`SHOOTING_STAR_CHANCE`) into `newAsteroids`. Has a `ttl` (expires on its own, blink last 1.5 s) and a comet-like golden `trail`. `split()` returns `[]` (no fragments). Scoring reads `a.points` (set in `Asteroid` constructor from `POINTS[size]`), so the subclass overrides points without conditionals in the loop. Counts toward `asteroids.length`, so it blocks `nextLevel` until destroyed or expired.
 
 ## Input model (easy to get wrong)
 
 - `keys[code]` — currently-held state (use for continuous actions like thrust/rotate).
-- `pressed(code)` — edge-detected "just pressed this frame"; **consumed on read**. Use for discrete actions (shoot, restart). Calling it twice per frame silently drops the event.
+- `pressed(code)` — edge-detected "just pressed this frame"; **consumed on read**. Use for discrete actions (shoot, restart, cycle skin). Calling it twice per frame silently drops the event. `KeyC` (skin) is read exactly once at the top of `update()`, before the state branches, so it works in every state.
 
 ## Conventions
 
