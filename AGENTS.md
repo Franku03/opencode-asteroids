@@ -20,12 +20,13 @@ Opening `index.html` directly via `file://` also works (no fetch/modules). After
 
 ## Architecture (all in `game.js`)
 
-- One file, top-to-bottom: input → utils → entity classes (`Bullet`, `Asteroid`, `PowerUp`, `Ship`, `Particle`) → game state → `update(dt)` → `draw()` → `requestAnimationFrame` loop.
-- Entity tables (`bullets`, `asteroids`, `powerups`, `particles`) are plain arrays filtered each frame by `dead` flag. New entities spawned mid-iteration are pushed to a separate array and concatenated after the loop (see bullet/asteroid collision in `update`).
+- One file, top-to-bottom: input → utils → entity classes (`Bullet`, `Asteroid`, `ShootingStar`, `PowerUp`, `Ship`, `Particle`) → game state → `update(dt)` → `draw()` → `requestAnimationFrame` loop.
+- Entity tables (`bullets`, `asteroids`, `powerups`, `particles`) are plain arrays filtered each frame by `dead` flag. New entities spawned mid-iteration are pushed to a separate array and concatenated after the loop (see bullet/asteroid collision in `update`). `ShootingStar` instances live in the `asteroids` array and are spawned via `newAsteroids` (not pushed directly to `asteroids`) to avoid mid-iteration mutation.
 - Toroidal space: positions wrapped with `wrap(v, max)`. All movement uses `dt` (seconds). `dt` is clamped to `0.05` in `loop` to avoid the spiral-of-death after tab switches.
 - State machine: `'playing' | 'dead' | 'gameover'`, transitions live in `update()`. `initGame()` is the only (re)entry point.
-- Tunables are inline consts per class (e.g. `ROT`, `THRUST`, `DRAG` in `Ship.update`; `RADII`/`SPEEDS`/`POINTS` arrays indexed by `size` 1–3). There is no config file. Power-up "Velocidad" tunables live as module consts near the asteroid tables: `POWERUP_DROP_CHANCE`, `POWERUP_TTL`, `POWERUP_RADIUS`, `SPEED_BOOST_DURATION`, `SPEED_BOOST_MULT`.
+- Tunables are inline consts per class (e.g. `ROT`, `THRUST`, `DRAG` in `Ship.update`; `RADII`/`SPEEDS`/`POINTS` arrays indexed by `size` 1–3). There is no config file. Power-up "Velocidad" tunables live as module consts near the asteroid tables: `POWERUP_DROP_CHANCE`, `POWERUP_TTL`, `POWERUP_RADIUS`, `SPEED_BOOST_DURATION`, `SPEED_BOOST_MULT`. Estrella Fugaz tunables live alongside them: `SHOOTING_STAR_CHANCE`, `SHOOTING_STAR_SPEED`, `SHOOTING_STAR_TTL`, `SHOOTING_STAR_POINTS`, `SHOOTING_STAR_RADIUS`, `SHOOTING_STAR_TRAIL`.
 - Power-up "Velocidad": `PowerUp` orbs drop on asteroid destruction (`POWERUP_DROP_CHANCE`). On pickup, `ship.speedBoost` is set to `SPEED_BOOST_DURATION` and `Ship.update` multiplies `THRUST` by `SPEED_BOOST_MULT` while the timer is active. Pickup resets (not stacks) the timer; the effect clears on death (`killShip`) and respawn/level reset (`Ship.reset`).
+- Estrella Fugaz: `ShootingStar extends Asteroid` (size-1 base, overridden `radius`/`points`/`vx`/`vy`/`rotSpeed`). Spawns on asteroid destruction (`SHOOTING_STAR_CHANCE`) into `newAsteroids`. Has a `ttl` (expires on its own, blink last 1.5 s) and a comet-like golden `trail`. `split()` returns `[]` (no fragments). Scoring reads `a.points` (set in `Asteroid` constructor from `POINTS[size]`), so the subclass overrides points without conditionals in the loop. Counts toward `asteroids.length`, so it blocks `nextLevel` until destroyed or expired.
 
 ## Input model (easy to get wrong)
 
@@ -39,4 +40,4 @@ Opening `index.html` directly via `file://` also works (no fetch/modules). After
 
 ## Known doc drift
 
-`README.md` advertises a "estrella fugaz" (shooting star) asteroid type. This is **not** implemented in `game.js`. The power-up "Velocidad", on the other hand, is implemented. Treat the code as the source of truth, not the README, when resolving conflicts.
+None currently. `README.md` and `game.js` are in sync (Estrella Fugaz and power-up "Velocidad" both implemented). Treat the code as the source of truth, not the README, when resolving conflicts.

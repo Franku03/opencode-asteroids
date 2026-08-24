@@ -69,12 +69,21 @@ const POWERUP_RADIUS        = 10;
 const SPEED_BOOST_DURATION  = 5;     // duración del efecto
 const SPEED_BOOST_MULT      = 2;     // multiplicador de THRUST
 
+// Estrella Fugaz: asteroide especial rápido y efímero que aparece al destruir asteroides
+const SHOOTING_STAR_CHANCE  = 0.05;  // probabilidad al destruir un asteroide
+const SHOOTING_STAR_SPEED   = 240;   // px/s (≈3× SPEEDS[1])
+const SHOOTING_STAR_TTL     = 6;     // segundos antes de desaparecer sola
+const SHOOTING_STAR_POINTS  = 300;   // recompensa alta
+const SHOOTING_STAR_RADIUS  = 9;
+const SHOOTING_STAR_TRAIL   = 12;    // nº de posiciones de la estela
+
 class Asteroid {
   constructor(x, y, size = 3) {
     this.x    = x;
     this.y    = y;
     this.size = size;
     this.radius = RADII[size];
+    this.points = POINTS[size];
     this.dead = false;
 
     const angle = rand(0, Math.PI * 2);
@@ -120,6 +129,65 @@ class Asteroid {
     for (let i = 1; i < this.verts.length; i++)
       ctx.lineTo(this.verts[i][0], this.verts[i][1]);
     ctx.closePath();
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+// ── Estrella Fugaz (asteroide especial) ───────────────────────────────────────
+class ShootingStar extends Asteroid {
+  constructor(x, y) {
+    super(x, y, 1);
+    this.radius    = SHOOTING_STAR_RADIUS;
+    this.points    = SHOOTING_STAR_POINTS;
+    this.ttl       = SHOOTING_STAR_TTL;
+    this.trail     = [];
+    this.rotSpeed  = rand(-3, 3);
+
+    const angle = rand(0, Math.PI * 2);
+    this.vx = Math.cos(angle) * SHOOTING_STAR_SPEED;
+    this.vy = Math.sin(angle) * SHOOTING_STAR_SPEED;
+  }
+
+  update(dt) {
+    super.update(dt);
+    this.trail.push([this.x, this.y]);
+    if (this.trail.length > SHOOTING_STAR_TRAIL) this.trail.shift();
+    this.ttl -= dt;
+    if (this.ttl <= 0) this.dead = true;
+  }
+
+  split() { return []; }
+
+  draw() {
+    // Parpadeo al expirar
+    if (this.ttl < 1.5 && Math.floor(this.ttl * 6) % 2 === 0) return;
+
+    // Estela: segmentos que se desvanecen hacia la cola
+    for (let i = 1; i < this.trail.length; i++) {
+      const dx = this.trail[i][0] - this.trail[i - 1][0];
+      const dy = this.trail[i][1] - this.trail[i - 1][1];
+      if (Math.abs(dx) > W / 2 || Math.abs(dy) > H / 2) continue;   // wrap: no unir lados opuestos
+
+      const a = i / this.trail.length;
+      ctx.strokeStyle = `rgba(255, 215, 0, ${(a * 0.6).toFixed(2)})`;
+      ctx.lineWidth   = a * 3;
+      ctx.beginPath();
+      ctx.moveTo(this.trail[i - 1][0], this.trail[i - 1][1]);
+      ctx.lineTo(this.trail[i][0], this.trail[i][1]);
+      ctx.stroke();
+    }
+
+    // Núcleo dorado brillante
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.rot);
+    ctx.fillStyle   = 'rgba(255, 215, 0, 0.9)';
+    ctx.strokeStyle = '#ffd700';
+    ctx.lineWidth   = 1.5;
+    ctx.beginPath();
+    ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+    ctx.fill();
     ctx.stroke();
     ctx.restore();
   }
@@ -415,10 +483,11 @@ function update(dt) {
       if (!a.dead && !b.dead && dist(b, a) < a.radius) {
         b.dead = true;
         a.dead = true;
-        score += POINTS[a.size];
+        score += a.points;
         explode(a.x, a.y, a.size * 5);
         newAsteroids.push(...a.split());
         if (Math.random() < POWERUP_DROP_CHANCE) powerups.push(new PowerUp(a.x, a.y));
+        if (Math.random() < SHOOTING_STAR_CHANCE) newAsteroids.push(new ShootingStar(a.x, a.y));
       }
     }
   }
@@ -480,9 +549,24 @@ function drawHUD() {
 
   // Indicador del power-up "Velocidad" activo
   if (ship.speedBoost > 0) {
-    ctx.fillStyle   = '#0df';
-    ctx.textAlign   = 'left';
-    ctx.fillText(`VELOCIDAD  ${ship.speedBoost.toFixed(1)}s`, 14, 48);
+    const BAR_X = 14, BAR_Y = 54, BAR_W = 120, BAR_H = 6;
+    const pct = ship.speedBoost / SPEED_BOOST_DURATION;
+
+    ctx.fillStyle = '#0df';
+    ctx.textAlign = 'left';
+    ctx.font      = '15px monospace';
+    ctx.fillText('VELOCIDAD', BAR_X, BAR_Y - 4);
+
+    // Fondo de la barra
+    ctx.fillStyle   = 'rgba(0, 220, 255, 0.15)';
+    ctx.fillRect(BAR_X, BAR_Y, BAR_W, BAR_H);
+    ctx.strokeStyle = 'rgba(0, 220, 255, 0.5)';
+    ctx.lineWidth   = 1;
+    ctx.strokeRect(BAR_X, BAR_Y, BAR_W, BAR_H);
+
+    // Relleno: se vacía de derecha a izquierda
+    ctx.fillStyle = '#0df';
+    ctx.fillRect(BAR_X, BAR_Y, BAR_W * pct, BAR_H);
   }
 }
 
