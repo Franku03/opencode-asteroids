@@ -69,6 +69,10 @@ const POWERUP_RADIUS        = 10;
 const SPEED_BOOST_DURATION  = 5;     // duración del efecto
 const SPEED_BOOST_MULT      = 2;     // multiplicador de THRUST
 
+// Power-up "Triple Shot": dispara 3 balas en abanico durante TRIPLE_SHOT_DURATION segundos
+const TRIPLE_SHOT_DURATION  = 5;     // duración del efecto
+const TRIPLE_SPREAD_ANGLE   = 0.14;  // rad a cada lado del centro (~8°)
+
 // Estrella Fugaz: asteroide especial rápido y efímero que aparece al destruir asteroides
 const SHOOTING_STAR_CHANCE  = 0.05;  // probabilidad al destruir un asteroide
 const SHOOTING_STAR_SPEED   = 240;   // px/s (≈3× SPEEDS[1])
@@ -203,9 +207,10 @@ class ShootingStar extends Asteroid {
 
 // ── PowerUp (Velocidad) ────────────────────────────────────────────────────────
 class PowerUp {
-  constructor(x, y) {
+  constructor(x, y, kind = Math.random() < 0.5 ? 'speed' : 'triple') {
     this.x       = x;
     this.y       = y;
+    this.kind    = kind;
     this.radius  = POWERUP_RADIUS;
     this.dead    = false;
     this.ttl     = POWERUP_TTL;
@@ -229,36 +234,50 @@ class PowerUp {
     const fading = this.ttl < 3 && Math.floor(this.ttl * 6) % 2 === 0;
     if (fading) return;
 
+    const isTriple = this.kind === 'triple';
+    const aura     = isTriple ? 'rgba(255, 170, 51, 0.35)' : 'rgba(0, 220, 255, 0.35)';
+    const stroke   = isTriple ? '#fa3' : '#0df';
+    const fill     = isTriple ? 'rgba(255, 170, 51, 0.18)' : 'rgba(0, 220, 255, 0.18)';
+    const iconCol  = isTriple ? '#ffd' : '#aff';
+
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.rot);
 
     // Aura
-    ctx.strokeStyle = 'rgba(0, 220, 255, 0.35)';
+    ctx.strokeStyle = aura;
     ctx.lineWidth   = 4;
     ctx.beginPath();
     ctx.arc(0, 0, this.radius + 4, 0, Math.PI * 2);
     ctx.stroke();
 
     // Cuerpo
-    ctx.strokeStyle = '#0df';
-    ctx.fillStyle   = 'rgba(0, 220, 255, 0.18)';
+    ctx.strokeStyle = stroke;
+    ctx.fillStyle   = fill;
     ctx.lineWidth   = 1.5;
     ctx.beginPath();
     ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
 
-    // Rayo "Velocidad"
+    // Icono (alineado a pantalla, sin rotar con el cuerpo)
     ctx.rotate(-this.rot);
-    ctx.strokeStyle = '#aff';
+    ctx.strokeStyle = iconCol;
     ctx.lineWidth   = 1.8;
     ctx.lineJoin    = 'round';
     ctx.beginPath();
-    ctx.moveTo( 5, -7);
-    ctx.lineTo(-3,  1);
-    ctx.lineTo( 2,  1);
-    ctx.lineTo(-5,  7);
+    if (isTriple) {
+      // 3 balas en abanico partiendo del mismo punto
+      ctx.moveTo(-5, 0); ctx.lineTo( 6, -5);
+      ctx.moveTo(-5, 0); ctx.lineTo( 6,  0);
+      ctx.moveTo(-5, 0); ctx.lineTo( 6,  5);
+    } else {
+      // Rayo "Velocidad"
+      ctx.moveTo( 5, -7);
+      ctx.lineTo(-3,  1);
+      ctx.lineTo( 2,  1);
+      ctx.lineTo(-5,  7);
+    }
     ctx.stroke();
 
     ctx.restore();
@@ -280,6 +299,7 @@ class Ship {
     this.invincible    = 3;
     this.shootCooldown = 0;
     this.speedBoost    = 0;   // timer del power-up "Velocidad" (s)
+    this.tripleShot    = 0;   // timer del power-up "Triple Shot" (s)
     this.dead          = false;
   }
 
@@ -288,6 +308,7 @@ class Ship {
     if (this.invincible    > 0) this.invincible    -= dt;
     if (this.shootCooldown > 0) this.shootCooldown -= dt;
     if (this.speedBoost    > 0) this.speedBoost    -= dt;
+    if (this.tripleShot    > 0) this.tripleShot    -= dt;
 
     const ROT   = 3.5;   // rad/s
     const THRUST = 260 * (this.speedBoost > 0 ? SPEED_BOOST_MULT : 1);  // px/s²
@@ -314,6 +335,13 @@ class Ship {
     const NOSE = 21;
     const ox = this.x + Math.cos(this.angle) * NOSE;
     const oy = this.y + Math.sin(this.angle) * NOSE;
+    if (this.tripleShot > 0) {
+      return [
+        new Bullet(ox, oy, this.angle - TRIPLE_SPREAD_ANGLE),
+        new Bullet(ox, oy, this.angle),
+        new Bullet(ox, oy, this.angle + TRIPLE_SPREAD_ANGLE),
+      ];
+    }
     return [new Bullet(ox, oy, this.angle)];
   }
 
@@ -332,6 +360,14 @@ class Ship {
       ctx.lineWidth   = 2;
       ctx.beginPath();
       ctx.arc(0, 0, 16, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    // Halo mientras el power-up "Triple Shot" esté activo
+    if (this.tripleShot > 0) {
+      ctx.strokeStyle = 'rgba(255, 170, 51, 0.45)';
+      ctx.lineWidth   = 2;
+      ctx.beginPath();
+      ctx.arc(0, 0, 20, 0, Math.PI * 2);
       ctx.stroke();
     }
 
@@ -441,7 +477,8 @@ function explode(x, y, count = 8) {
 function killShip() {
   explode(ship.x, ship.y, 14);
   ship.dead = true;
-  ship.speedBoost = 0;   // el efecto se pierde al morir
+  ship.speedBoost = 0;   // los efectos se pierden al morir
+  ship.tripleShot = 0;
   lives--;
   if (lives <= 0) {
     state = 'gameover';
@@ -516,7 +553,8 @@ function update(dt) {
   for (const p of powerups) {
     if (!p.dead && dist(ship, p) < ship.radius + p.radius) {
       p.dead = true;
-      ship.speedBoost = SPEED_BOOST_DURATION;
+      if (p.kind === 'triple') ship.tripleShot = TRIPLE_SHOT_DURATION;
+      else                     ship.speedBoost = SPEED_BOOST_DURATION;
     }
   }
 
@@ -555,27 +593,31 @@ function drawHUD() {
   for (let i = 0; i < lives; i++)
     drawLifeIcon(W - 16 - i * 22, 18);
 
-  // Indicador del power-up "Velocidad" activo
-  if (ship.speedBoost > 0) {
-    const BAR_X = 14, BAR_Y = 54, BAR_W = 120, BAR_H = 6;
-    const pct = ship.speedBoost / SPEED_BOOST_DURATION;
-
-    ctx.fillStyle = '#0df';
+  // Barras de power-ups activos (apiladas verticalmente)
+  const BAR_X = 14, BAR_W = 120, BAR_H = 6;
+  let barY = 54;
+  const drawPowerBar = (label, pct, color, fillBg, strokeBg) => {
+    ctx.fillStyle = color;
     ctx.textAlign = 'left';
     ctx.font      = '15px monospace';
-    ctx.fillText('VELOCIDAD', BAR_X, BAR_Y - 4);
+    ctx.fillText(label, BAR_X, barY - 4);
 
-    // Fondo de la barra
-    ctx.fillStyle   = 'rgba(0, 220, 255, 0.15)';
-    ctx.fillRect(BAR_X, BAR_Y, BAR_W, BAR_H);
-    ctx.strokeStyle = 'rgba(0, 220, 255, 0.5)';
+    ctx.fillStyle   = fillBg;
+    ctx.fillRect(BAR_X, barY, BAR_W, BAR_H);
+    ctx.strokeStyle = strokeBg;
     ctx.lineWidth   = 1;
-    ctx.strokeRect(BAR_X, BAR_Y, BAR_W, BAR_H);
+    ctx.strokeRect(BAR_X, barY, BAR_W, BAR_H);
 
-    // Relleno: se vacía de derecha a izquierda
-    ctx.fillStyle = '#0df';
-    ctx.fillRect(BAR_X, BAR_Y, BAR_W * pct, BAR_H);
-  }
+    ctx.fillStyle = color;
+    ctx.fillRect(BAR_X, barY, BAR_W * pct, BAR_H);
+    barY += 24;
+  };
+  if (ship.speedBoost > 0)
+    drawPowerBar('VELOCIDAD', ship.speedBoost / SPEED_BOOST_DURATION,
+                 '#0df', 'rgba(0, 220, 255, 0.15)', 'rgba(0, 220, 255, 0.5)');
+  if (ship.tripleShot > 0)
+    drawPowerBar('TRIPLE', ship.tripleShot / TRIPLE_SHOT_DURATION,
+                 '#fa3', 'rgba(255, 170, 51, 0.15)', 'rgba(255, 170, 51, 0.5)');
 }
 
 function drawOverlay(title, sub) {
