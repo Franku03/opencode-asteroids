@@ -50,7 +50,7 @@ Al destruir un asteroide existe una probabilidad (≈10 %) de que suelte un powe
 
 ## Estrella Fugaz
 
-Al destruir un asteroide existe una probabilidad baja (≈5 %) de que aparezca una **Estrella Fugaz**, un asteroide especial representado por un núcleo dorado brillante con una estela tipo cometa que se desvanece. Características:
+Al destruir un asteroide existe una probabilidad baja (≈5 %) de que aparezca una **Estrella Fugaz**, un asteroide especial representado por un polígono irregular dorado (misma forma que un asteroide, pero más pequeño y brillante) con una estela tipo cometa que se desvanece. Características:
 
 - Se mueve **≈3× más rápido** que un asteroide pequeño (240 px/s).
 - **Desaparece sola a los 6 s** si no se destruye, con un parpadeo final los últimos 1,5 s.

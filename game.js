@@ -93,7 +93,10 @@ class Asteroid {
     this.rotSpeed = rand(-1.2, 1.2);
     this.rot = rand(0, Math.PI * 2);
 
-    // Polígono irregular
+    this.buildVerts();
+  }
+
+  buildVerts() {
     const n = randInt(8, 13);
     this.verts = [];
     for (let i = 0; i < n; i++) {
@@ -143,6 +146,7 @@ class ShootingStar extends Asteroid {
     this.ttl       = SHOOTING_STAR_TTL;
     this.trail     = [];
     this.rotSpeed  = rand(-3, 3);
+    this.buildVerts();   // polígono al radio correcto
 
     const angle = rand(0, Math.PI * 2);
     this.vx = Math.cos(angle) * SHOOTING_STAR_SPEED;
@@ -178,15 +182,19 @@ class ShootingStar extends Asteroid {
       ctx.stroke();
     }
 
-    // Núcleo dorado brillante
+    // Núcleo dorado brillante (polígono irregular)
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.rot);
     ctx.fillStyle   = 'rgba(255, 215, 0, 0.9)';
     ctx.strokeStyle = '#ffd700';
     ctx.lineWidth   = 1.5;
+    ctx.lineJoin    = 'round';
     ctx.beginPath();
-    ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+    ctx.moveTo(this.verts[0][0], this.verts[0][1]);
+    for (let i = 1; i < this.verts.length; i++)
+      ctx.lineTo(this.verts[i][0], this.verts[i][1]);
+    ctx.closePath();
     ctx.fill();
     ctx.stroke();
     ctx.restore();
