@@ -29,6 +29,7 @@ Luego visita `http://localhost:3000`.
 | `←` `→`   | Rotar nave |
 | `↑`       | Propulsar  |
 | `Espacio` | Disparar   |
+| `C`       | Cambiar skin de la nave |
 
 ## Puntuación
 
@@ -58,6 +59,20 @@ Al destruir un asteroide existe una probabilidad baja (≈5 %) de que aparezca u
 - Impacta a la nave igual que un asteroide normal (pierdes una vida).
 - Bloquea el avance de nivel mientras exista: destrúyela o espera a que expire.
 
+## Skins
+
+Puedes cambiar la apariencia de la nave pulsando `C` en cualquier momento (incluso en partida o en *Game Over*). Es puramente cosmético: la hitbox y el manejo no cambian. La elección se guarda en `localStorage` y se recuerda entre recargas.
+
+| Skin       | Color   | Llama    | Forma              |
+| ---------- | ------- | -------- | ------------------ |
+| Clásica    | Blanco  | Naranja  | Triángulo con muesca trasera |
+| Carmesí    | Rojo    | Amarilla | Dardo afilado de alas barridas |
+| Áurea      | Dorado  | Roja     | Crucero ancho      |
+| Esmeralda  | Verde   | Verde    | Interceptor largo y estrecho |
+| Púrpura    | Púrpura | Magenta  | Caza hexagonal     |
+
+El HUD muestra el nombre de la skin activa en la esquina inferior izquierda.
+
 ## Características
 
 - 3 vidas con invencibilidad temporal al reaparecer (parpadeo)
@@ -65,3 +80,4 @@ Al destruir un asteroide existe una probabilidad baja (≈5 %) de que aparezca u
 - Partículas de explosión al destruir asteroides
 - Power-up "Velocidad": empuje duplicado durante 5 s al recoger el orbe
 - Estrella Fugaz: asteroide dorado rápido y efímero, 300 puntos, desaparece a los 6 s
+- Skins: 5 apariencias de nave (forma + color + llama) intercambiables con `C`, persisten en `localStorage`
