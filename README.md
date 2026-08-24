@@ -4,7 +4,7 @@ Clon del clásico arcade **Asteroids** implementado en canvas HTML5 puro, sin de
 
 ## Descripción
 
-Nave espacial en un campo de asteroides con envolvimiento de bordes (el espacio es toroidal). Destruye asteroides para sumar puntos: los grandes se parten en medianos, los medianos en pequeños. Al destruir un asteroide puede soltar un power-up "Velocidad" que duplica el empuje de la nave durante 5 segundos.
+Nave espacial en un campo de asteroides con envolvimiento de bordes (el espacio es toroidal). Destruye asteroides para sumar puntos: los grandes se parten en medianos, los medianos en pequeños. Al destruir un asteroide pueden soltarse power-ups (**Velocidad**, **Triple Shot** o **Escudo**) y, con poca probabilidad, una **Estrella Fugaz**. Cambia la skin de la nave con `C`.
 
 ## Tecnologías
 
@@ -39,15 +39,21 @@ Luego visita `http://localhost:3000`.
 | Mediano   | 50     |
 | Pequeño   | 100    |
 
-## Power-up "Velocidad"
+## Power-ups
 
-Al destruir un asteroide existe una probabilidad (≈10 %) de que suelte un power-up **Velocidad**, representado por un orbe cian con un rayo. Al recogerlo con la nave:
+Al destruir un asteroide pueden soltarse orbes de power-up. Cada tipo tiene su propia probabilidad independiente (pueden soltarse varios a la vez). Si no se recogen, los orbes desaparecen del campo a los 10 s. Recoger un orbe mientras su efecto está activo **reinicia el temporizador** (no se apila). Todos los efectos se pierden al morir o al cambiar de nivel.
 
-- Duplica la fuerza de empuje (THRUST) durante **5 segundos**.
-- Muestra un halo cian alrededor de la nave y una barra `VELOCIDAD` en el HUD que se vacía de derecha a izquierda con el tiempo restante.
-- Recoger un segundo orbe mientras el efecto está activo **reinicia el temporizador** a 5 s (no se apila más allá de 2×).
-- El efecto se pierde al morir o al cambiar de nivel.
-- Si no se recoge, el orbe desaparece del campo a los 10 s.
+### Velocidad  (≈10 %)
+
+Orbe cian con un rayo. Duplica la fuerza de empuje (THRUST) durante **5 segundos**. Muestra un halo cian alrededor de la nave y una barra `VELOCIDAD` en el HUD que se vacía de derecha a izquierda con el tiempo restante.
+
+### Triple Shot  (≈8 %)
+
+Orbe naranja con tres balas en abanico. Cada disparo lanza **3 balas** en abanico (±~8°) durante **5 segundos**. Muestra un halo naranja alrededor de la nave y una barra `TRIPLE` en el HUD.
+
+### Escudo  (≈8 %)
+
+Orbe verde con un arco concéntrico. Genera un anillo protector alrededor de la nave durante **8 segundos** que **destruye asteroides al contacto** (sumando puntos y fragmentos). Cada impacto absorbido consume **1,5 s** del temporizador. El anillo parpadea en el último 1,5 s antes de agotarse. Muestra una barra `ESCUDO` en el HUD.
 
 ## Estrella Fugaz
 
@@ -79,5 +85,7 @@ El HUD muestra el nombre de la skin activa en la esquina inferior izquierda.
 - Asteroides se parten en fragmentos más pequeños al ser destruidos
 - Partículas de explosión al destruir asteroides
 - Power-up "Velocidad": empuje duplicado durante 5 s al recoger el orbe
+- Power-up "Triple Shot": dispara 3 balas en abanico durante 5 s
+- Power-up "Escudo": anillo protector que destruye asteroides al contacto durante 8 s
 - Estrella Fugaz: asteroide dorado rápido y efímero, 300 puntos, desaparece a los 6 s
 - Skins: 5 apariencias de nave (forma + color + llama) intercambiables con `C`, persisten en `localStorage`
