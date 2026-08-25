@@ -67,15 +67,17 @@ Al destruir un asteroide existe una probabilidad baja (≈5 %) de que aparezca u
 
 ## Skins
 
-Puedes cambiar la apariencia de la nave pulsando `C` en cualquier momento (incluso en partida o en *Game Over*). Es puramente cosmético: la hitbox y el manejo no cambian. La elección se guarda en `localStorage` y se recuerda entre recargas.
+Puedes cambiar la apariencia de la nave pulsando `C` en cualquier momento (incluso en partida o en *Game Over*). La elección se guarda en `localStorage` y se recuerda entre recargas. Cada skin define además un `scale` (multiplica el tamaño y la hitbox) y un `scoreMult` (multiplica los puntos ganados).
 
-| Skin       | Color   | Llama    | Forma              |
-| ---------- | ------- | -------- | ------------------ |
-| Clásica    | Blanco  | Naranja  | Triángulo con muesca trasera |
-| Carmesí    | Rojo    | Amarilla | Dardo afilado de alas barridas |
-| Áurea      | Dorado  | Roja     | Crucero ancho      |
-| Esmeralda  | Verde   | Verde    | Interceptor largo y estrecho |
-| Púrpura    | Púrpura | Magenta  | Caza hexagonal     |
+| Skin       | Color   | Llama    | Forma              | Tamaño | Puntos |
+| ---------- | ------- | -------- | ------------------ | ------ | ------ |
+| Clásica    | Blanco  | Naranja  | Triángulo con muesca trasera | ×1 | ×1 |
+| Carmesí    | Rojo    | Amarilla | Dardo afilado de alas barridas | ×1 | ×1 |
+| Áurea      | Dorado  | Roja     | Crucero ancho      | ×1 | ×1 |
+| Esmeralda  | Verde   | Verde    | Interceptor largo y estrecho | ×1 | ×1 |
+| Púrpura    | Púrpura | Magenta  | Caza hexagonal     | ×2 | ×2 |
+
+La **Púrpura** es el doble de grande que la nave original (también su hitbox) y suma el **doble de puntos**.
 
 El HUD muestra el nombre de la skin activa en la esquina inferior izquierda.
 
@@ -88,4 +90,4 @@ El HUD muestra el nombre de la skin activa en la esquina inferior izquierda.
 - Power-up "Triple Shot": dispara 3 balas en abanico durante 5 s
 - Power-up "Escudo": anillo protector que destruye asteroides al contacto durante 8 s
 - Estrella Fugaz: asteroide dorado rápido y efímero, 300 puntos, desaparece a los 6 s
-- Skins: 5 apariencias de nave (forma + color + llama) intercambiables con `C`, persisten en `localStorage`
+- Skins: 5 apariencias de nave (forma + color + llama) intercambiables con `C`, persisten en `localStorage`; la Púrpura es ×2 de tamaño (hitbox incluida) y suma ×2 puntos

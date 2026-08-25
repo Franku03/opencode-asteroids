@@ -91,7 +91,7 @@ const TRIPLE_SHOT_DROP_CHANCE = 0.08; // probabilidad al destruir un asteroide (
 const SHIELD_DROP_CHANCE    = 0.08;  // probabilidad al destruir un asteroide (drop independiente)
 const SHIELD_DURATION       = 8;     // duración base al recoger (s)
 const SHIELD_HIT_COST       = 1.5;   // tiempo consumido por impacto absorbido
-const SHIELD_RADIUS         = 20;    // alcance del escudo (ship.radius=12)
+const SHIELD_RADIUS         = 20;    // alcance del escudo (ship.radius = 12 × scale)
 
 // Estrella Fugaz: asteroide especial rápido y efímero que aparece al destruir asteroides
 const SHOOTING_STAR_CHANCE  = 0.05;  // probabilidad al destruir un asteroide
@@ -101,13 +101,14 @@ const SHOOTING_STAR_POINTS  = 300;   // recompensa alta
 const SHOOTING_STAR_RADIUS  = 9;
 const SHOOTING_STAR_TRAIL   = 12;    // nº de posiciones de la estela
 
-// Skins de la nave: cosméticas (no afectan la hitbox). Ciclar con tecla C.
+// Skins de la nave. `scale` multiplica el tamaño (y la hitbox); `scoreMult` multiplica
+// los puntos ganados al usar esa nave. Ciclar con tecla C.
 const SKINS = [
-  { name: 'Clásica',   color: '#fff', flame: 'rgba(255, 130, 0, 0.85)',  verts: [[ 20,  0], [-12, -9], [ -7,  0], [-12,  9]] },
-  { name: 'Carmesí',   color: '#f55', flame: 'rgba(255, 220, 0, 0.85)',  verts: [[ 22,  0], [-14, -7], [-18, -2], [ -8,  0], [-18,  2], [-14,  7]] },
-  { name: 'Áurea',     color: '#fd5', flame: 'rgba(255,  70, 0, 0.85)',  verts: [[ 17,  0], [ -9,-13], [-14, -5], [ -6,  0], [-14,  5], [ -9, 13]] },
-  { name: 'Esmeralda', color: '#5f5', flame: 'rgba(130, 255, 90, 0.85)', verts: [[ 25,  0], [-15, -5], [ -9,  0], [-15,  5]] },
-  { name: 'Púrpura',   color: '#c7f', flame: 'rgba(255,  90,255, 0.85)', verts: [[ 18,  0], [ -3,-11], [-15, -7], [-15,  7], [ -3, 11]] },
+  { name: 'Clásica',   color: '#fff', flame: 'rgba(255, 130, 0, 0.85)',  verts: [[ 20,  0], [-12, -9], [ -7,  0], [-12,  9]], scale: 1, scoreMult: 1 },
+  { name: 'Carmesí',   color: '#f55', flame: 'rgba(255, 220, 0, 0.85)',  verts: [[ 22,  0], [-14, -7], [-18, -2], [ -8,  0], [-18,  2], [-14,  7]], scale: 1, scoreMult: 1 },
+  { name: 'Áurea',     color: '#fd5', flame: 'rgba(255,  70, 0, 0.85)',  verts: [[ 17,  0], [ -9,-13], [-14, -5], [ -6,  0], [-14,  5], [ -9, 13]], scale: 1, scoreMult: 1 },
+  { name: 'Esmeralda', color: '#5f5', flame: 'rgba(130, 255, 90, 0.85)', verts: [[ 25,  0], [-15, -5], [ -9,  0], [-15,  5]], scale: 1, scoreMult: 1 },
+  { name: 'Púrpura',   color: '#c7f', flame: 'rgba(255,  90,255, 0.85)', verts: [[ 18,  0], [ -3,-11], [-15, -7], [-15,  7], [ -3, 11]], scale: 2, scoreMult: 2 },
 ];
 
 let shipSkin = 0;
@@ -333,8 +334,13 @@ class PowerUp {
 }
 
 // ── Ship ──────────────────────────────────────────────────────────────────────
+const SHIP_BASE_RADIUS = 12;   // radio base de la hitbox (multiplicado por SKINS[shipSkin].scale)
+
 class Ship {
   constructor() { this.reset(); }
+
+  get scale()  { return SKINS[shipSkin].scale; }
+  get radius() { return SHIP_BASE_RADIUS * SKINS[shipSkin].scale; }
 
   reset() {
     this.x      = W / 2;
@@ -342,7 +348,6 @@ class Ship {
     this.angle  = -Math.PI / 2;
     this.vx     = 0;
     this.vy     = 0;
-    this.radius = 12;
     this.thrusting     = false;
     this.invincible    = 3;
     this.shootCooldown = 0;
@@ -382,7 +387,7 @@ class Ship {
   tryShoot() {
     if (this.shootCooldown > 0 || this.dead) return [];
     this.shootCooldown = 0.2;
-    const NOSE = 21;
+    const NOSE = 21 * this.scale;
     const ox = this.x + Math.cos(this.angle) * NOSE;
     const oy = this.y + Math.sin(this.angle) * NOSE;
     if (this.tripleShot > 0) {
@@ -411,7 +416,7 @@ class Ship {
       ctx.strokeStyle = 'rgba(0, 220, 255, 0.45)';
       ctx.lineWidth   = 2;
       ctx.beginPath();
-      ctx.arc(0, 0, 16, 0, Math.PI * 2);
+      ctx.arc(0, 0, 16 * this.scale, 0, Math.PI * 2);
       ctx.stroke();
     }
     // Halo mientras el power-up "Triple Shot" esté activo
@@ -419,7 +424,7 @@ class Ship {
       ctx.strokeStyle = 'rgba(255, 170, 51, 0.45)';
       ctx.lineWidth   = 2;
       ctx.beginPath();
-      ctx.arc(0, 0, 20, 0, Math.PI * 2);
+      ctx.arc(0, 0, 20 * this.scale, 0, Math.PI * 2);
       ctx.stroke();
     }
 
@@ -431,21 +436,22 @@ class Ship {
         ctx.fillStyle   = 'rgba(120, 255, 160, 0.12)';
         ctx.lineWidth   = 2;
         ctx.beginPath();
-        ctx.arc(0, 0, SHIELD_RADIUS, 0, Math.PI * 2);
+        ctx.arc(0, 0, SHIELD_RADIUS * this.scale, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
       }
     }
 
     // Silueta de la skin activa
-    drawShipShape(skin.verts, skin.color, 1);
+    drawShipShape(skin.verts, skin.color, this.scale);
 
     // Llama del propulsor
     if (this.thrusting && Math.random() > 0.35) {
+      const back = 8 * this.scale;
       ctx.beginPath();
-      ctx.moveTo(-8, -4);
-      ctx.lineTo(-8 - rand(6, 14), 0);
-      ctx.lineTo(-8,  4);
+      ctx.moveTo(-back, -4 * this.scale);
+      ctx.lineTo(-back - rand(6, 14) * this.scale, 0);
+      ctx.lineTo(-back,  4 * this.scale);
       ctx.strokeStyle = skin.flame;
       ctx.stroke();
     }
@@ -549,7 +555,7 @@ function killShip() {
 // Usada por balas y por el escudo (sin duplicar lógica).
 function destroyAsteroid(a, splits) {
   a.dead = true;
-  score += a.points;
+  score += a.points * SKINS[shipSkin].scoreMult;
   explode(a.x, a.y, a.size * 5);
   splits.push(...a.split());
   if (Math.random() < POWERUP_DROP_CHANCE)      powerups.push(new PowerUp(a.x, a.y, 'velocidad'));
@@ -560,7 +566,7 @@ function destroyAsteroid(a, splits) {
 
 // ── Update ────────────────────────────────────────────────────────────────────
 function update(dt) {
-  // Cambio de skin (cosmético, disponible en cualquier estado)
+  // Cambio de skin (disponible en cualquier estado)
   if (pressed('KeyC')) setSkin(shipSkin + 1);
 
   if (state === 'gameover') {
@@ -613,7 +619,7 @@ function update(dt) {
     if (a.dead) continue;
     const d = dist(ship, a);
     if (ship.shield > 0) {
-      if (d < SHIELD_RADIUS + a.radius * 0.9) {
+      if (d < SHIELD_RADIUS * ship.scale + a.radius * 0.9) {
         destroyAsteroid(a, shipSplits);
         ship.shield = Math.max(0, ship.shield - SHIELD_HIT_COST);
       }
@@ -644,7 +650,7 @@ function drawLifeIcon(x, y) {
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(-Math.PI / 2);
-  drawShipShape(skin.verts, skin.color, 0.45, 1.2);
+  drawShipShape(skin.verts, skin.color, 0.45 * skin.scale, 1.2);
   ctx.restore();
 }
 
